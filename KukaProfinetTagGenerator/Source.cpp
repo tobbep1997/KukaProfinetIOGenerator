@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	int outputStartAddress;
 	int inputStartAddress;
 
-	if (argc > 3)
+	if (argc == 4)
 	{
 		inFileName = argv[1];
 		outputStartAddress = atoi(argv[2]);
@@ -365,9 +365,17 @@ int main(int argc, char *argv[])
 	
 		std::cout << "InFileName\t: " + inFileName + "\nOutputAddress\t: " + std::to_string(outputStartAddress) + "\nInputAddress\t: " + std::to_string(inputStartAddress);
 	}
+	else if (argc == 3)
+	{
+		inFileName = "IO.xml";
+		outputStartAddress = atoi(argv[1]);		
+		inputStartAddress = atoi(argv[2]);
+
+		std::cout << "InFileName\t: " + inFileName + "\nOutputAddress\t: " + std::to_string(outputStartAddress) + "\nInputAddress\t: " + std::to_string(inputStartAddress);
+	}
 	else
 	{
-		std::cout << "Not enough arguments please input: InFileName, OutputAddress, InputAddress" << std::endl;
+		std::cout << "Not enough arguments please input: InFileName, OutputAddress, InputAddress\nOr OutputAddress, InputAddress and the default name will be use (IO.xml)" << std::endl;
 	}
 	
 	std::thread thread(ReadFile, inFileName, inputStartAddress, outputStartAddress);
