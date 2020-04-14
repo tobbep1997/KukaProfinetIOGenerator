@@ -211,7 +211,7 @@ void ReadFile(std::string inFileName, int inStartAddress, int outStartAddress)
 					if (signal->bitLenght == 16)
 						signal->siemensType = SiemensType::Int;
 					if (signal->bitLenght == 32)
-						signal->siemensType = SiemensType::DWord;
+						signal->siemensType = SiemensType::DInt;
 					break;
 				case SignalType::Unsinged:
 					if (signal->bitLenght == 1)
