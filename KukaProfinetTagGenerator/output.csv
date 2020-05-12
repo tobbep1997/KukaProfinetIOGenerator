@@ -1,0 +1,3 @@
+Prefix ;Tag table;InStartAddress;outStartAddress;
+Prefix ;Default tag table;0;0;
+=$A$2&"Sekvens_Robot";=$B$2;UDInt;="%QD"&$C$2+0

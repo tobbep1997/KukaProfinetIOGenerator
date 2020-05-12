@@ -138,6 +138,8 @@ public:
 	std::string name;
 
 	std::string profinetAddress;
+	std::string profiAddressPrefix;
+	std::string profiAddressSuffix;
 
 
 	std::string to_string()
@@ -148,7 +150,6 @@ public:
 		return "SignalName : " + name + "\nIOType : " + IOType + "\nSiemensType : " + SiemensType + "\nAddress : " + std::to_string(address) + "\nprofinetAddress : " + profinetAddress;
 	}
 };
-
 
 
 void ReadFile(std::string inFileName, int inStartAddress, int outStartAddress)
@@ -231,6 +232,7 @@ void ReadFile(std::string inFileName, int inStartAddress, int outStartAddress)
 
 			
 			}
+			
 
 			if (buffer.find("Connection ") != std::string::npos)
 			{
@@ -306,9 +308,21 @@ void ReadFile(std::string inFileName, int inStartAddress, int outStartAddress)
 				
 
 				if (io->siemensType == SiemensType::Bool)
-					io->profinetAddress = io->type != IOType::in ? "%I" + std::to_string((io->address / 8) + inStartAddress) + "." + std::to_string(io->address % 8) : "%Q" + std::to_string((io->address / 8) + outStartAddress) + "." + std::to_string(io->address % 8);
+					io->profinetAddress = io->type != IOType::in ? "%I" + std::to_string(((io->address / 8) + inStartAddress)-1) + "." + std::to_string(io->address % 8) : "%Q" + std::to_string(((io->address / 8) + outStartAddress)-1) + "." + std::to_string(io->address % 8);
 				else
-					io->profinetAddress = io->type != IOType::in ? prefix + std::to_string(io->address + inStartAddress) : prefix + std::to_string(io->address + outStartAddress);
+					io->profinetAddress = io->type != IOType::in ? prefix + std::to_string(io->address + inStartAddress - 1) : prefix + std::to_string(io->address + outStartAddress - 1);
+
+				if (io->siemensType == SiemensType::Bool)
+				{
+					io->profiAddressPrefix = prefix;
+					io->profiAddressSuffix = "." + std::to_string(io->address % 8);
+				}
+				else
+				{
+					io->profiAddressPrefix = prefix;
+					io->profiAddressSuffix = " ";
+				}
+
 				mappedIO.push_back(io);
 			}
 		}
@@ -323,11 +337,27 @@ void ReadFile(std::string inFileName, int inStartAddress, int outStartAddress)
 
 	if (outFile.is_open())
 	{
-		outFile << "Tag name;Default tag table" << std::endl;
+		outFile << "Prefix ;Tag table;" << "InStartAddress" << ";" << "outStartAddress" << ";" << std::endl;
+		outFile << "Prefix ;Default tag table;" << inStartAddress << ";" << outStartAddress << ";" << std::endl;
 	
 		for (size_t i = 0; i < mappedIO.size(); i++)
 		{
-			outFile << mappedIO[i]->name << ";" << "=$B$1;" << SiemensType_to_string(mappedIO[i]->siemensType) << ";" << mappedIO[i]->profinetAddress << std::endl;
+			if (mappedIO[i]->type == IOType::in)
+			{
+
+				if (mappedIO[i]->siemensType != SiemensType::Bool)
+					outFile << "=$A$2&" << "\"" << mappedIO[i]->name << "\"" << ";" << "=$B$2;" << SiemensType_to_string(mappedIO[i]->siemensType) << ";=\"" << mappedIO[i]->profiAddressPrefix << "\"&$C$2+" << (mappedIO[i]->address - 1) << std::endl;
+				else
+					outFile << "=$A$2&" << "\"" << mappedIO[i]->name << "\"" << ";" << "=$B$2;" << SiemensType_to_string(mappedIO[i]->siemensType) << ";=\"" << mappedIO[i]->profiAddressPrefix << "\"&$C$2+" << (mappedIO[i]->address / 8) - 1 << "&\"" << mappedIO[i]->profiAddressSuffix << "\"" << std::endl;
+			}
+			if (mappedIO[i]->type == IOType::out)
+			{
+
+				if (mappedIO[i]->siemensType != SiemensType::Bool)
+					outFile << "=$A$2&" << "\"" << mappedIO[i]->name << "\"" << ";" << "=$B$2;" << SiemensType_to_string(mappedIO[i]->siemensType) << ";=\"" << mappedIO[i]->profiAddressPrefix << "\"&$D$2+" << (mappedIO[i]->address - 1) << std::endl;
+				else
+					outFile << "=$A$2&" << "\"" << mappedIO[i]->name << "\"" << ";" << "=$B$2;" << SiemensType_to_string(mappedIO[i]->siemensType) << ";=\"" << mappedIO[i]->profiAddressPrefix << "\"&$D$2+" << (mappedIO[i]->address / 8) - 1 << "&\"" << mappedIO[i]->profiAddressSuffix << "\"" << std::endl;
+			}
 		}
 	}
 
@@ -359,23 +389,38 @@ int main(int argc, char *argv[])
 
 	if (argc == 4)
 	{
-		inFileName = argv[1];
-		outputStartAddress = atoi(argv[2]);
-		inputStartAddress = atoi(argv[3]);
-	
+		try
+		{
+			inFileName = argv[1];
+			outputStartAddress = atoi(argv[2]);
+			inputStartAddress = atoi(argv[3]);
+		}
+		catch (const std::exception& exception)
+		{
+			std::cout << exception.what() << std::endl;
+		}
 		std::cout << "InFileName\t: " + inFileName + "\nOutputAddress\t: " + std::to_string(outputStartAddress) + "\nInputAddress\t: " + std::to_string(inputStartAddress);
 	}
 	else if (argc == 3)
 	{
-		inFileName = "IO.xml";
-		outputStartAddress = atoi(argv[1]);		
-		inputStartAddress = atoi(argv[2]);
-
+		try
+		{
+			inFileName = "IO.xml";
+			outputStartAddress = atoi(argv[1]);
+			inputStartAddress = atoi(argv[2]);
+		}
+		catch (const std::exception& exception)
+		{
+			std::cout << exception.what() << std::endl;
+		}
 		std::cout << "InFileName\t: " + inFileName + "\nOutputAddress\t: " + std::to_string(outputStartAddress) + "\nInputAddress\t: " + std::to_string(inputStartAddress);
 	}
 	else
 	{
 		std::cout << "Not enough arguments please input: InFileName, OutputAddress, InputAddress\nOr OutputAddress, InputAddress and the default name will be use (IO.xml)" << std::endl;
+		inFileName = "IO.xml";
+		outputStartAddress = 0;
+		inputStartAddress = 0;
 	}
 	
 	std::thread thread(ReadFile, inFileName, inputStartAddress, outputStartAddress);
